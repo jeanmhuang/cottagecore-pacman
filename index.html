@@ -388,7 +388,7 @@
       }
 
       function moveBee(bee, dt) {
-        if (atCenter(bee)) {
+        if (!bee.moving && nearCenter(bee, 6)) {
           snapToCenter(bee);
           const choices = availableDirs(bee).filter((dir) => dir !== opposite[bee.dir]);
           const options = choices.length ? choices : availableDirs(bee);
