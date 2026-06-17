@@ -337,7 +337,8 @@
           dir,
           nextDir: dir,
           speed,
-          mouth: 0
+          mouth: 0,
+          moving: false
         };
       }
 
@@ -377,9 +378,10 @@
       }
 
       function movePlayer(dt) {
-        if (canTurn(player, player.nextDir)) {
+        if (player.nextDir !== player.dir && canTurn(player, player.nextDir)) {
           snapToCenter(player);
           player.dir = player.nextDir;
+          player.moving = false;
         }
         moveEntity(player, player.dir, player.speed * tile * dt);
         eatCurrentTile();
@@ -414,17 +416,19 @@
 
       function moveEntity(entity, dir, amount) {
         if (!dir) return;
-        if (atCenter(entity)) {
+        if (!entity.moving || nearCenter(entity, 1)) {
           snapToCenter(entity);
           if (!pathOpen(entity, dir)) return;
+          entity.moving = true;
         }
         entity.x += dirs[dir].x * amount;
         entity.y += dirs[dir].y * amount;
         handleTunnel(entity);
+        if (snapForward(entity, dir, amount + 1)) entity.moving = false;
       }
 
       function canTurn(entity, dir) {
-        if (!dir || !atCenter(entity)) return false;
+        if (!dir || !nearCenter(entity, 6)) return false;
         return pathOpen(entity, dir);
       }
 
@@ -441,7 +445,27 @@
       }
 
       function atCenter(entity) {
-        return Math.abs((entity.x - tile / 2) % tile) < 5 && Math.abs((entity.y - tile / 2) % tile) < 5;
+        return nearCenter(entity, 5);
+      }
+
+      function nearCenter(entity, tolerance) {
+        const centeredX = Math.round((entity.x - tile / 2) / tile) * tile + tile / 2;
+        const centeredY = Math.round((entity.y - tile / 2) / tile) * tile + tile / 2;
+        return Math.abs(entity.x - centeredX) <= tolerance && Math.abs(entity.y - centeredY) <= tolerance;
+      }
+
+      function snapForward(entity, dir, tolerance) {
+        const centeredX = Math.round((entity.x - tile / 2) / tile) * tile + tile / 2;
+        const centeredY = Math.round((entity.y - tile / 2) / tile) * tile + tile / 2;
+        if ((dir === "left" && centeredX < entity.x && Math.abs(entity.x - centeredX) <= tolerance) || (dir === "right" && centeredX > entity.x && Math.abs(entity.x - centeredX) <= tolerance)) {
+          entity.x = centeredX;
+          return true;
+        }
+        if ((dir === "up" && centeredY < entity.y && Math.abs(entity.y - centeredY) <= tolerance) || (dir === "down" && centeredY > entity.y && Math.abs(entity.y - centeredY) <= tolerance)) {
+          entity.y = centeredY;
+          return true;
+        }
+        return false;
       }
 
       function snapToCenter(entity) {
