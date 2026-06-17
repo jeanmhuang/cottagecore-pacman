@@ -413,7 +413,11 @@
       }
 
       function moveEntity(entity, dir, amount) {
-        if (!canTurn(entity, dir)) return;
+        if (!dir) return;
+        if (atCenter(entity)) {
+          snapToCenter(entity);
+          if (!pathOpen(entity, dir)) return;
+        }
         entity.x += dirs[dir].x * amount;
         entity.y += dirs[dir].y * amount;
         handleTunnel(entity);
@@ -421,6 +425,10 @@
 
       function canTurn(entity, dir) {
         if (!dir || !atCenter(entity)) return false;
+        return pathOpen(entity, dir);
+      }
+
+      function pathOpen(entity, dir) {
         const cx = Math.round((entity.x - tile / 2) / tile);
         const cy = Math.round((entity.y - tile / 2) / tile);
         const targetX = cx + dirs[dir].x;
@@ -433,7 +441,7 @@
       }
 
       function atCenter(entity) {
-        return Math.abs((entity.x - tile / 2) % tile) < 3 && Math.abs((entity.y - tile / 2) % tile) < 3;
+        return Math.abs((entity.x - tile / 2) % tile) < 5 && Math.abs((entity.y - tile / 2) % tile) < 5;
       }
 
       function snapToCenter(entity) {
