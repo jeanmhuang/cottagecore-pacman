@@ -172,7 +172,36 @@
       .board-wrap {
         min-width: 0;
         display: grid;
+        gap: 10px;
         place-items: center;
+      }
+
+      .board-hud {
+        width: min(72vh, 100%);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .board-hud div {
+        border: 1px solid rgba(77, 111, 76, 0.28);
+        border-radius: 8px;
+        background: rgba(255, 249, 234, 0.86);
+        padding: 8px 10px;
+        text-align: center;
+      }
+
+      .board-hud span {
+        display: block;
+        color: #66765f;
+        font-size: 0.74rem;
+        font-weight: 850;
+      }
+
+      .board-hud strong {
+        display: block;
+        margin-top: 1px;
+        font-size: 1.08rem;
       }
 
       canvas {
@@ -203,6 +232,10 @@
         }
 
         canvas {
+          width: min(100%, 84vh);
+        }
+
+        .board-hud {
           width: min(100%, 84vh);
         }
 
@@ -241,6 +274,11 @@
           </div>
         </aside>
         <div class="board-wrap">
+          <div class="board-hud" aria-label="Current score">
+            <div><span>Score</span><strong id="board-score">0</strong></div>
+            <div><span>Lives</span><strong id="board-lives">3</strong></div>
+            <div><span>Level</span><strong id="board-level">1</strong></div>
+          </div>
           <canvas id="game" width="608" height="672" aria-label="Meadow maze"></canvas>
         </div>
       </section>
@@ -252,6 +290,9 @@
       const scoreEl = document.querySelector("#score");
       const livesEl = document.querySelector("#lives");
       const levelEl = document.querySelector("#level");
+      const boardScoreEl = document.querySelector("#board-score");
+      const boardLivesEl = document.querySelector("#board-lives");
+      const boardLevelEl = document.querySelector("#board-level");
       const statusEl = document.querySelector("#status");
       const messageEl = document.querySelector("#message");
       const tile = 32;
@@ -548,6 +589,9 @@
         scoreEl.textContent = score;
         livesEl.textContent = lives;
         levelEl.textContent = level;
+        boardScoreEl.textContent = score;
+        boardLivesEl.textContent = lives;
+        boardLevelEl.textContent = level;
         statusEl.textContent = status;
         messageEl.textContent = message;
       }
