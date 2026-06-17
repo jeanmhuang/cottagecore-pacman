@@ -338,6 +338,7 @@
       let pellets;
       let state;
       let powerTicks;
+      let safeTicks;
       let lastTime = 0;
       let animationId = null;
       let flowerPulse = 0;
@@ -356,6 +357,7 @@
         map = rawMap.map((row) => row.split(""));
         pellets = 0;
         powerTicks = 0;
+        safeTicks = 0;
         player = makeMover(9, 16, "left", 5.8 + level * 0.35);
         bees = [
           makeBee(8, 10, "left", 4.1, 0),
@@ -413,6 +415,7 @@
       function update(dt) {
         flowerPulse += dt * 4;
         if (powerTicks > 0) powerTicks -= dt;
+        if (safeTicks > 0) safeTicks -= dt;
         movePlayer(dt);
         bees.forEach((bee) => moveBee(bee, dt));
         checkCollisions();
@@ -546,6 +549,7 @@
       }
 
       function checkCollisions() {
+        if (state !== "playing" || safeTicks > 0) return;
         for (const bee of bees) {
           if (Math.hypot(player.x - bee.x, player.y - bee.y) < tile * 0.55) {
             if (powerTicks > 0) {
@@ -562,7 +566,8 @@
       }
 
       function loseLife() {
-        lives--;
+        if (state !== "playing" || safeTicks > 0) return;
+        lives = Math.max(0, lives - 1);
         if (lives <= 0) {
           state = "over";
           updateHud("Game over", "Restart for another meadow run.");
@@ -576,6 +581,7 @@
           bee.dir = bee.scatterDir;
         });
         powerTicks = 0;
+        safeTicks = 1.5;
         updateHud("Careful", "The bees sent you back to the path.");
       }
 
