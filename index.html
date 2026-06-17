@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cottagecore Pac-Man</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #263326;
+        background: #eaf1df;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: clamp(14px, 3vw, 32px);
+        background:
+          radial-gradient(circle at 18% 18%, rgba(242, 171, 179, 0.18), transparent 28%),
+          linear-gradient(135deg, #eaf1df, #d8ead8 48%, #e7e0f2);
+      }
+
+      .game-shell {
+        width: min(1120px, 100%);
+        display: grid;
+        grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+        gap: clamp(16px, 3vw, 30px);
+        align-items: center;
+      }
+
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #4f7c59;
+        color: #fff6df;
+        font-size: 1.4rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .status-block {
+        border-left: 4px solid #c75f7a;
+        padding-left: 14px;
+      }
+
+      .status {
+        margin: 0 0 6px;
+        font-weight: 850;
+        font-size: 1.1rem;
+      }
+
+      .message {
+        margin: 0;
+        color: #5c6d59;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .stat {
+        border: 1px solid rgba(77, 111, 76, 0.24);
+        border-radius: 8px;
+        background: rgba(255, 250, 235, 0.74);
+        padding: 10px;
+      }
+
+      .stat span {
+        display: block;
+        color: #66765f;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 1.2rem;
+      }
+
+      .toolbar,
+      .pad {
+        display: grid;
+        gap: 8px;
+      }
+
+      .toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .toolbar button,
+      .pad button {
+        min-height: 44px;
+        border: 1px solid rgba(77, 111, 76, 0.32);
+        border-radius: 8px;
+        background: #fff9ea;
+        color: #263326;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .toolbar button:hover,
+      .pad button:hover {
+        border-color: #c75f7a;
+        background: #ffffff;
+      }
+
+      .pad {
+        width: min(210px, 100%);
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .pad button {
+        aspect-ratio: 1;
+        min-height: 0;
+        font-size: 1.3rem;
+      }
+
+      .pad .up {
+        grid-column: 2;
+      }
+
+      .pad .left {
+        grid-column: 1;
+      }
+
+      .pad .down {
+        grid-column: 2;
+      }
+
+      .pad .right {
+        grid-column: 3;
+      }
+
+      .board-wrap {
+        min-width: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      canvas {
+        width: min(72vh, 100%);
+        aspect-ratio: 19 / 21;
+        border: clamp(8px, 1.6vw, 16px) solid #375c43;
+        border-radius: 8px;
+        background: #bcd69f;
+        box-shadow: 0 26px 70px rgba(42, 71, 48, 0.25);
+        image-rendering: auto;
+      }
+
+      @media (max-width: 850px) {
+        .app {
+          align-items: start;
+        }
+
+        .game-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .board-wrap {
+          order: 1;
+        }
+
+        .side-panel {
+          order: 2;
+        }
+
+        canvas {
+          width: min(100%, 84vh);
+        }
+
+        h1 {
+          font-size: 2.25rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="game-shell" aria-label="Cottagecore Pac-Man game">
+        <aside class="side-panel">
+          <div class="brand-row">
+            <div class="brand-mark" aria-hidden="true">🍓</div>
+            <h1>Meadow Munch</h1>
+          </div>
+          <div class="status-block">
+            <p class="status" id="status">Ready</p>
+            <p class="message" id="message">Collect berries and dodge the bees.</p>
+          </div>
+          <div class="stats" aria-label="Game stats">
+            <div class="stat"><span>Score</span><strong id="score">0</strong></div>
+            <div class="stat"><span>Lives</span><strong id="lives">3</strong></div>
+            <div class="stat"><span>Level</span><strong id="level">1</strong></div>
+          </div>
+          <div class="toolbar">
+            <button type="button" id="start">Start</button>
+            <button type="button" id="restart">Restart</button>
+          </div>
+          <div class="pad" aria-label="Touch controls">
+            <button type="button" class="up" data-dir="up" title="Up">↑</button>
+            <button type="button" class="left" data-dir="left" title="Left">←</button>
+            <button type="button" class="down" data-dir="down" title="Down">↓</button>
+            <button type="button" class="right" data-dir="right" title="Right">→</button>
+          </div>
+        </aside>
+        <div class="board-wrap">
+          <canvas id="game" width="608" height="672" aria-label="Meadow maze"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const canvas = document.querySelector("#game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.querySelector("#score");
+      const livesEl = document.querySelector("#lives");
+      const levelEl = document.querySelector("#level");
+      const statusEl = document.querySelector("#status");
+      const messageEl = document.querySelector("#message");
+      const tile = 32;
+      const dirs = {
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 },
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 }
+      };
+      const opposite = { left: "right", right: "left", up: "down", down: "up" };
+      const beeColors = ["#f2b84b", "#e8879b", "#8fb7e8", "#b487d6"];
+      const rawMap = [
+        "###################",
+        "#........#........#",
+        "#.##.###.#.###.##.#",
+        "#o##.###.#.###.##o#",
+        "#.................#",
+        "#.##.#.#####.#.##.#",
+        "#....#...#...#....#",
+        "####.### # ###.####",
+        "   #.#       #.#   ",
+        "####.# ## ## #.####",
+        "T      #   #      T",
+        "####.# ##### #.####",
+        "   #.#       #.#   ",
+        "####.# ##### #.####",
+        "#........#........#",
+        "#.##.###.#.###.##.#",
+        "#o.#.....P.....#.o#",
+        "##.#.#.#####.#.#.##",
+        "#....#...#...#....#",
+        "#.######.#.######.#",
+        "#.................#",
+        "###################"
+      ];
+
+      let map;
+      let player;
+      let bees;
+      let score;
+      let lives;
+      let level;
+      let pellets;
+      let state;
+      let powerTicks;
+      let lastTime = 0;
+      let animationId = null;
+      let flowerPulse = 0;
+
+      function resetGame() {
+        score = 0;
+        lives = 3;
+        level = 1;
+        state = "ready";
+        setupLevel();
+        updateHud("Ready", "Collect berries and dodge the bees.");
+        draw();
+      }
+
+      function setupLevel() {
+        map = rawMap.map((row) => row.split(""));
+        pellets = 0;
+        powerTicks = 0;
+        player = makeMover(9, 16, "left", 5.8 + level * 0.35);
+        bees = [
+          makeBee(8, 10, "left", 4.1, 0),
+          makeBee(10, 10, "right", 4.0, 1),
+          makeBee(9, 9, "up", 3.9, 2),
+          makeBee(9, 11, "down", 3.8, 3)
+        ];
+        for (let y = 0; y < map.length; y++) {
+          for (let x = 0; x < map[y].length; x++) {
+            if (map[y][x] === "." || map[y][x] === "o") pellets++;
+            if (map[y][x] === "P") map[y][x] = " ";
+          }
+        }
+      }
+
+      function makeMover(x, y, dir, speed) {
+        return {
+          x: x * tile + tile / 2,
+          y: y * tile + tile / 2,
+          dir,
+          nextDir: dir,
+          speed,
+          mouth: 0
+        };
+      }
+
+      function makeBee(x, y, dir, speed, colorIndex) {
+        return {
+          ...makeMover(x, y, dir, speed + level * 0.18),
+          startX: x,
+          startY: y,
+          color: beeColors[colorIndex],
+          scatterDir: dir
+        };
+      }
+
+      function startGame() {
+        if (state === "playing") return;
+        state = "playing";
+        updateHud("Foraging", "Eat every berry in the meadow.");
+        lastTime = performance.now();
+        cancelAnimationFrame(animationId);
+        animationId = requestAnimationFrame(loop);
+      }
+
+      function loop(time) {
+        const dt = Math.min((time - lastTime) / 1000, 0.05);
+        lastTime = time;
+        update(dt);
+        draw();
+        if (state === "playing") animationId = requestAnimationFrame(loop);
+      }
+
+      function update(dt) {
+        flowerPulse += dt * 4;
+        if (powerTicks > 0) powerTicks -= dt;
+        movePlayer(dt);
+        bees.forEach((bee) => moveBee(bee, dt));
+        checkCollisions();
+      }
+
+      function movePlayer(dt) {
+        if (canTurn(player, player.nextDir)) {
+          snapToCenter(player);
+          player.dir = player.nextDir;
+        }
+        moveEntity(player, player.dir, player.speed * tile * dt);
+        eatCurrentTile();
+      }
+
+      function moveBee(bee, dt) {
+        if (atCenter(bee)) {
+          snapToCenter(bee);
+          const choices = availableDirs(bee).filter((dir) => dir !== opposite[bee.dir]);
+          const options = choices.length ? choices : availableDirs(bee);
+          bee.dir = chooseBeeDir(bee, options);
+        }
+        moveEntity(bee, bee.dir, bee.speed * tile * dt);
+      }
+
+      function chooseBeeDir(bee, options) {
+        if (!options.length) return bee.dir;
+        const frightened = powerTicks > 0;
+        let best = options[0];
+        let bestScore = frightened ? -Infinity : Infinity;
+        for (const dir of options) {
+          const nextX = bee.x + dirs[dir].x * tile;
+          const nextY = bee.y + dirs[dir].y * tile;
+          const distance = Math.hypot(player.x - nextX, player.y - nextY) + Math.random() * tile * 1.5;
+          if (frightened ? distance > bestScore : distance < bestScore) {
+            bestScore = distance;
+            best = dir;
+          }
+        }
+        return best;
+      }
+
+      function moveEntity(entity, dir, amount) {
+        if (!canTurn(entity, dir)) return;
+        entity.x += dirs[dir].x * amount;
+        entity.y += dirs[dir].y * amount;
+        handleTunnel(entity);
+      }
+
+      function canTurn(entity, dir) {
+        if (!dir || !atCenter(entity)) return false;
+        const cx = Math.round((entity.x - tile / 2) / tile);
+        const cy = Math.round((entity.y - tile / 2) / tile);
+        const targetX = cx + dirs[dir].x;
+        const targetY = cy + dirs[dir].y;
+        return !isWall(targetX, targetY);
+      }
+
+      function availableDirs(entity) {
+        return Object.keys(dirs).filter((dir) => canTurn(entity, dir));
+      }
+
+      function atCenter(entity) {
+        return Math.abs((entity.x - tile / 2) % tile) < 3 && Math.abs((entity.y - tile / 2) % tile) < 3;
+      }
+
+      function snapToCenter(entity) {
+        entity.x = Math.round((entity.x - tile / 2) / tile) * tile + tile / 2;
+        entity.y = Math.round((entity.y - tile / 2) / tile) * tile + tile / 2;
+      }
+
+      function tileAt(entity) {
+        return {
+          x: Math.round((entity.x - tile / 2) / tile),
+          y: Math.round((entity.y - tile / 2) / tile)
+        };
+      }
+
+      function isWall(x, y) {
+        if (y < 0 || y >= map.length) return true;
+        if (x < 0 || x >= map[y].length) return false;
+        return map[y][x] === "#";
+      }
+
+      function handleTunnel(entity) {
+        if (entity.x < -tile / 2) entity.x = canvas.width + tile / 2;
+        if (entity.x > canvas.width + tile / 2) entity.x = -tile / 2;
+      }
+
+      function eatCurrentTile() {
+        const current = tileAt(player);
+        const cell = map[current.y]?.[current.x];
+        if (cell === "." || cell === "o") {
+          map[current.y][current.x] = " ";
+          pellets--;
+          score += cell === "o" ? 50 : 10;
+          if (cell === "o") powerTicks = 8;
+          updateHud(powerTicks > 0 ? "Flower power" : "Foraging", cell === "o" ? "The bees are sleepy now." : "Berry gathered.");
+          if (pellets === 0) nextLevel();
+        }
+      }
+
+      function checkCollisions() {
+        for (const bee of bees) {
+          if (Math.hypot(player.x - bee.x, player.y - bee.y) < tile * 0.55) {
+            if (powerTicks > 0) {
+              score += 200;
+              bee.x = bee.startX * tile + tile / 2;
+              bee.y = bee.startY * tile + tile / 2;
+              bee.dir = bee.scatterDir;
+              updateHud("Bee tucked in", "That sleepy bee went home.");
+            } else {
+              loseLife();
+            }
+          }
+        }
+      }
+
+      function loseLife() {
+        lives--;
+        if (lives <= 0) {
+          state = "over";
+          updateHud("Game over", "Restart for another meadow run.");
+          draw();
+          return;
+        }
+        player = makeMover(9, 16, "left", 5.8 + level * 0.35);
+        bees.forEach((bee) => {
+          bee.x = bee.startX * tile + tile / 2;
+          bee.y = bee.startY * tile + tile / 2;
+          bee.dir = bee.scatterDir;
+        });
+        powerTicks = 0;
+        updateHud("Careful", "The bees sent you back to the path.");
+      }
+
+      function nextLevel() {
+        level++;
+        setupLevel();
+        updateHud("Meadow cleared", "A fresh garden path has appeared.");
+      }
+
+      function updateHud(status, message) {
+        scoreEl.textContent = score;
+        livesEl.textContent = lives;
+        levelEl.textContent = level;
+        statusEl.textContent = status;
+        messageEl.textContent = message;
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawMeadow();
+        drawPellets();
+        bees.forEach(drawBee);
+        drawPlayer();
+        if (state !== "playing") drawOverlay();
+      }
+
+      function drawMeadow() {
+        ctx.fillStyle = "#bcd69f";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < map.length; y++) {
+          for (let x = 0; x < map[y].length; x++) {
+            if (map[y][x] === "#") {
+              const px = x * tile;
+              const py = y * tile;
+              ctx.fillStyle = "#4f7c59";
+              roundRect(px + 3, py + 3, tile - 6, tile - 6, 8);
+              ctx.fill();
+              ctx.fillStyle = "rgba(255, 246, 223, 0.24)";
+              ctx.fillRect(px + 7, py + 8, tile - 14, 3);
+            }
+          }
+        }
+        drawGardenDetails();
+      }
+
+      function drawGardenDetails() {
+        ctx.fillStyle = "rgba(126, 92, 153, 0.22)";
+        for (let i = 0; i < 26; i++) {
+          const x = ((i * 73) % canvas.width) + 4;
+          const y = ((i * 131) % canvas.height) + 4;
+          if (map[Math.floor(y / tile)]?.[Math.floor(x / tile)] !== "#") {
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      function drawPellets() {
+        for (let y = 0; y < map.length; y++) {
+          for (let x = 0; x < map[y].length; x++) {
+            const cell = map[y][x];
+            const cx = x * tile + tile / 2;
+            const cy = y * tile + tile / 2;
+            if (cell === ".") {
+              ctx.fillStyle = "#c75f7a";
+              ctx.beginPath();
+              ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = "#f6e7a6";
+              ctx.beginPath();
+              ctx.arc(cx - 1, cy - 1, 1.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            if (cell === "o") drawFlower(cx, cy, 8 + Math.sin(flowerPulse) * 1.5);
+          }
+        }
+      }
+
+      function drawFlower(cx, cy, radius) {
+        ctx.fillStyle = "#ef93b0";
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI * 2 * i) / 6;
+          ctx.beginPath();
+          ctx.ellipse(cx + Math.cos(angle) * radius * 0.55, cy + Math.sin(angle) * radius * 0.55, radius * 0.38, radius * 0.22, angle, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#f3c95f";
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawPlayer() {
+        player.mouth = (player.mouth + 0.18) % Math.PI;
+        const angle = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[player.dir];
+        const mouth = 0.35 + Math.abs(Math.sin(player.mouth)) * 0.22;
+        ctx.fillStyle = "#f4cb5f";
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y);
+        ctx.arc(player.x, player.y, tile * 0.42, angle + mouth, angle + Math.PI * 2 - mouth);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#7f563b";
+        ctx.beginPath();
+        ctx.arc(player.x + Math.cos(angle - 0.9) * 8, player.y + Math.sin(angle - 0.9) * 8, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawBee(bee) {
+        const sleepy = powerTicks > 0;
+        ctx.save();
+        ctx.translate(bee.x, bee.y);
+        ctx.fillStyle = sleepy ? "#b8afd8" : bee.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, tile * 0.34, tile * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
+        ctx.beginPath();
+        ctx.ellipse(-7, -12, 9, 5, -0.6, 0, Math.PI * 2);
+        ctx.ellipse(7, -12, 9, 5, 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#263326";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-8, -8);
+        ctx.lineTo(-8, 8);
+        ctx.moveTo(4, -9);
+        ctx.lineTo(4, 9);
+        ctx.stroke();
+        ctx.fillStyle = "#263326";
+        ctx.beginPath();
+        ctx.arc(-8, -3, 2, 0, Math.PI * 2);
+        ctx.arc(8, -3, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawOverlay() {
+        ctx.fillStyle = "rgba(255, 249, 234, 0.82)";
+        roundRect(120, 282, 368, 92, 8);
+        ctx.fill();
+        ctx.fillStyle = "#263326";
+        ctx.textAlign = "center";
+        ctx.font = "800 28px system-ui, sans-serif";
+        ctx.fillText(state === "over" ? "Meadow closed" : "Meadow Munch", canvas.width / 2, 323);
+        ctx.font = "700 16px system-ui, sans-serif";
+        ctx.fillText("Press Start or Space", canvas.width / 2, 350);
+      }
+
+      function roundRect(x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+      }
+
+      function setDirection(dir) {
+        player.nextDir = dir;
+        if (state !== "playing") startGame();
+      }
+
+      document.querySelector("#start").addEventListener("click", startGame);
+      document.querySelector("#restart").addEventListener("click", resetGame);
+      document.querySelectorAll("[data-dir]").forEach((button) => {
+        button.addEventListener("click", () => setDirection(button.dataset.dir));
+      });
+      window.addEventListener("keydown", (event) => {
+        const keyDirs = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", a: "left", d: "right", w: "up", s: "down" };
+        if (event.code === "Space") {
+          event.preventDefault();
+          startGame();
+          return;
+        }
+        const dir = keyDirs[event.key];
+        if (dir) {
+          event.preventDefault();
+          setDirection(dir);
+        }
+      });
+
+      resetGame();
+    </script>
+  </body>
+</html>
